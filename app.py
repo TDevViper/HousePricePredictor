@@ -1,33 +1,42 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 
-# 1️⃣ Load trained model and feature columns
+# Load saved model and feature columns
 model = joblib.load("best_model.pkl")
-feature_columns = joblib.load("feature_columns.pkl")
+feature_columns = joblib.load("feature_columns.pkl")  # make sure you have this saved
 
 st.title("🏠 House Price Predictor")
 
-# 2️⃣ Collect user input
-def get_user_input():
-    input_data = {}
-    # Example numeric inputs (replace/add more as per your dataset)
-    input_data['LotArea'] = st.number_input("Lot Area", min_value=0, value=8450)
-    input_data['OverallQual'] = st.number_input("Overall Quality", min_value=1, max_value=10, value=7)
-    input_data['1stFlrSF'] = st.number_input("1st Floor SF", min_value=0, value=856)
-    input_data['2ndFlrSF'] = st.number_input("2nd Floor SF", min_value=0, value=854)
-    # Example categorical input
-    input_data['MSZoning_RL'] = st.checkbox("MSZoning: RL")  # Example one-hot
-    input_data['MSZoning_RM'] = st.checkbox("MSZoning: RM")  # Another option
+# User-friendly input fields
+lot_area = st.number_input("Lot Area (in sq ft)", value=5000)
+year_built = st.number_input("Year Built", value=2000)
+bedrooms = st.number_input("Number of Bedrooms", value=3)
+bathrooms = st.number_input("Number of Bathrooms", value=2)
+garage_size = st.number_input("Garage Size (Number of Cars)", value=1)
+overall_quality = st.slider("Overall Quality (1-10)", 1, 10, 5)
 
-    return pd.DataFrame([input_data])
+# Create DataFrame from inputs
+input_dict = {
+    "LotArea": lot_area,
+    "YearBuilt": year_built,
+    "BedroomAbvGr": bedrooms,
+    "FullBath": bathrooms,
+    "GarageCars": garage_size,
+    "OverallQual": overall_quality
+}
+input_df = pd.DataFrame([input_dict])
 
-input_df = get_user_input()
+# Preprocess: add missing columns (from training)
+for col in feature_columns:
+    if col not in input_df.columns:
+        input_df[col] = 0  # add missing columns with 0s
 
-# 3️⃣ Align input columns with training columns
-input_df = input_df.reindex(columns=feature_columns, fill_value=0)
+# Ensure columns are in the same order as training
+input_df = input_df[feature_columns]
 
-# 4️⃣ Make prediction
+# Predict button
 if st.button("Predict Price"):
     prediction = model.predict(input_df)[0]
-    st.success(f"💰 Predicted House Price: ${prediction:,.2f}")
+    st.success(f"🏡 Predicted House Price: ${prediction:,.2f}")
